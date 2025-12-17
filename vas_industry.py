@@ -1,92 +1,125 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+import plotly.express as px # New dependency for V2.0
 import vas_kernel as vk
 
 # ==========================================
-# 1. INDUSTRIAL CLOUD (S&R) - FULLY RESTORED
+# 1. STURROCK & ROBSON GROUP (V2.0 FEDERAL MODEL)
 # ==========================================
+def render_sturrock_robson_module():
+    """
+    V2.0: THE CONGLOMERATE CLOUD.
+    Reflecting the 'Federal Model' of Sturrock & Robson.
+    """
+    # --- HEADER: THE HOLDING COMPANY VIEW ---
+    c1, c2 = st.columns([3, 1])
+    with c1:
+        st.markdown("## 🦅 Sturrock & Robson Group | Executive Console")
+        st.caption("Governance: Federal Model | HQ: London / Johannesburg")
+    with c2:
+        # The 'Barbell Strategy' Metric
+        st.metric("Portfolio Balance", "60/40", "Defensive / Growth")
 
-def render_liquid_module():
-    vk.init_sr_data()
-    st.markdown("## 💧 Veridian Industrial Cloud | Liquid Automation")
-    st.caption("Site: Germiston Plant A • Status: **NOMINAL**")
-    
+    # GROUP KPI ROW (Aggregated from Subsidiaries)
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Current Flow Rate", "1,240 L/min", "+2.4%")
-    k2.metric("Pump Efficiency", "94.2%", "-0.5%")
-    k3.metric("Active Alerts", "0", "All Clear")
-    k4.metric("Next Maintenance", "14 Days", "Pump B-12")
-    st.divider()
-    
-    c1, c2 = st.columns([2, 1], gap="medium")
-    with c1:
-        st.subheader("24-Hour Flow Stability")
-        chart_data = st.session_state.sr_liquid
-        st.line_chart(chart_data.set_index('Time')[['Flow Efficiency (%)']], color="#0056b3")
-        st.caption("Real-time telemetry from SCADA Node 4.")
-    with c2:
-        st.subheader("Asset Health")
-        st.markdown("**Pump Station Alpha**")
-        st.progress(0.94, text="Efficiency: 94%")
-        st.markdown("**Pump Station Beta**")
-        st.progress(0.88, text="Efficiency: 88%")
-        st.markdown("**Filtration Unit**")
-        st.progress(0.99, text="Efficiency: 99%")
-        st.info("ℹ️ **Optimization:** Beta pump is consuming 4% more energy than baseline.")
+    k1.metric("Global Revenue (Est)", "£ 245M", "+12% (Renewables)")
+    k2.metric("Safety (LTR)", "0.02", "Best in Class (SigmaHLR)")
+    k3.metric("Engagement Score", "90%", "+16% (Have Your Say)") #
+    k4.metric("Active Projects", "142", "Global Footprint")
 
-def render_safety_module():
-    vk.init_sr_data()
-    st.markdown("## 🛡️ Veridian Industrial Cloud | Safety Overlay")
-    st.caption("Group-Wide Incident Tracking & Risk Heatmap")
-    
-    st.markdown("""
-    <div style="text-align: center; padding: 20px; background-color: #EAFAF1; border: 1px solid #27AE60; border-radius: 10px; margin-bottom: 20px;">
-        <h1 style="color: #186A3B; font-size: 3rem; margin: 0;">412 DAYS</h1>
-        <h3 style="color: #27AE60; margin: 0;">WITHOUT LOST TIME INJURY (LTI)</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    c1, c2 = st.columns(2, gap="large")
-    with c1:
-        st.subheader("Incident Categorization (YTD)")
-        df = st.session_state.sr_safety
-        st.bar_chart(df.set_index('Category')['Incidents'], color="#C0392B")
-    with c2:
-        st.subheader("Risk Action Items")
-        st.checkbox("Review Site B PPE Protocols", value=True)
-        st.checkbox("Certify new forklift operators (JHB)", value=False)
-        st.checkbox("Update Thermal Division Fire Suppression", value=False)
-        st.warning("⚠️ **Compliance Alert:** 3 certifications expiring in < 7 days.")
-
-def render_energy_module():
-    vk.init_sr_data()
-    st.markdown("## ⚡ Veridian Industrial Cloud | EnergyShield")
-    st.caption("PPA Performance & Liability Transfer Monitor")
-    
-    f1, f2, f3 = st.columns(3)
-    f1.metric("Grid Reliance", "42%", "-18% YoY")
-    f2.metric("PPA Production", "14.2 MWh", "Target Met")
-    f3.metric("Est. Savings (Dec)", "R 45,200", "Cumulative")
     st.divider()
-    
-    col_chart, col_stat = st.columns([3, 1], gap="medium")
-    with col_chart:
-        st.subheader("Supply Mix: Grid vs. Veridian PPA")
-        energy_df = st.session_state.sr_energy.set_index('Date')
-        st.line_chart(energy_df, color=["#C0392B", "#27AE60"])
-    with col_stat:
-        st.subheader("System Status")
-        st.markdown("**Battery State of Charge**")
-        st.progress(0.85, text="85% Charged")
-        st.markdown("**Inverter Load**")
-        st.progress(0.60, text="60% Capacity")
-        st.markdown("---")
-        st.success("✅ **Sovereignty Check:** System mitigated 4 hours of Load Shedding.")
+
+    # --- DIVISIONAL NAVIGATION (THE FEDERAL STRUCTURE) ---
+    # We use Tabs to represent the distinct subsidiaries
+    tab_mining, tab_marine, tab_tech, tab_infra = st.tabs([
+        "⛏️ Martin & Robson", 
+        "⚓ Shand Engineering", 
+        "⛽ Liquid Automation", 
+        "🚆 Pandrol / Sigma"
+    ])
+
+    # === TAB 1: MARTIN & ROBSON (THE CASH COW) ===
+    with tab_mining:
+        st.subheader("Martin & Robson | Magnetite Solutions")
+        st.caption("Strategic Role: Baseload Cash Flow | Ops: Global Logistics")
+        
+        c_map, c_inv = st.columns([2, 1])
+        
+        with c_map:
+            st.markdown("**🚢 Global Logistics Corridor**")
+            # Simulating the Export Route: Witbank -> Richards Bay -> Indonesia
+            st.progress(85, text="Shipment MR-402: En Route to Indonesia (ETA: 4 Days)")
+            st.progress(30, text="Shipment MR-405: Loading at Richards Bay Coal Terminal")
+        
+        with c_inv:
+            st.markdown("**📦 Vendor Managed Inventory**") 
+            st.warning("⚠️ Mackay Port (Aus): Low Stock (12%)")
+            st.success("✅ Witbank Plant: Optimal (85%)")
+            st.info("ℹ️ **Insight:** Indonesia demand spiking due to thermal coal surge.")
+
+    # === TAB 2: SHAND ENGINEERING (THE NICHE LEADER) ===
+    with tab_marine:
+        st.subheader("Shand Engineering | Critical Marine Infrastructure")
+        st.caption("Focus: OCIMF Compliance & Hose Integrity")
+        
+        # Visualize "Industrial Criticality" 
+        s1, s2, s3 = st.columns(3)
+        s1.metric("Active Couplings", "412", "North Sea / West Africa")
+        s2.metric("Compliance Rate", "100%", "OCIMF / GMPHOM ")
+        s3.metric("Manufacturing", "Grimsby", "Capacity: 92%")
+
+        st.markdown("#### 🌊 Subsea Stress Monitor (Live)")
+        # Simulating a live feed from an FPSO coupling
+        chart_data = pd.DataFrame(
+            np.random.randn(20, 1) + 100,
+            columns=['Pressure (Bar)']
+        )
+        st.line_chart(chart_data, height=200)
+        st.info("ℹ️ **Status:** Coupling A-14 holding pressure. No seal degradation detected.")
+
+    # === TAB 3: LIQUID AUTOMATION SYSTEMS (THE INNOVATOR) ===
+    with tab_tech:
+        st.subheader("LAS | Fuel Sovereignty & Aviation")
+        st.caption("Focus: Chain of Custody & Theft Prevention")
+        
+        # The "Chain of Custody" Visualization
+        col_flow, col_alert = st.columns(2)
+        
+        with col_flow:
+            st.markdown("**⛽ Fuel Reconciliation (Daily)**")
+            st.write("Target: Glencore Coal Ops")
+            # Comparing Dispensed vs. Burned
+            st.metric("Delivered (Tanker)", "40,000 L")
+            st.metric("Dispensed (Nozzle)", "39,850 L")
+            st.metric("Variance", "-0.37%", "Within Tolerance")
+            
+        with col_alert:
+            st.markdown("**✈️ Aviation: DeiceCube**") 
+            st.success("System Ready: OR Tambo Int.")
+            st.metric("Glycol Mix Ratio", "45:55", "Optimized for -2°C")
+
+    # === TAB 4: PANDROL / SIGMAHLR (INFRASTRUCTURE) ===
+    with tab_infra:
+        st.subheader("Infrastructure & Safety Systems")
+        st.caption("Focus: Rail Integrity & Wellhead Safety")
+        
+        i1, i2 = st.columns(2)
+        with i1:
+            st.markdown("**🚆 Pandrol Rail (SA)**")
+            st.write("Track Condition: **Transnet Corridor 4**")
+            st.progress(78, text="Track Geometry Integrity")
+            st.warning("⚠️ Theft Alert: Sector 4 (Clip Tampering Detected)")
+        
+        with i2:
+            st.markdown("**🔥 SigmaHLR (Wellhead Safety)**")
+            st.write("System: **Offshore Platform B**")
+            st.success("✅ Hydraulic Pressure: Stable")
+            st.metric("Fusible Loop Status", "ARMED", "Fire Safety Active")
 
 # ==========================================
-# 2. AGRI CLOUD (BONNYVALE) - FULLY RESTORED
+# 2. AGRI CLOUD (BONNYVALE) - PRESERVED
 # ==========================================
-
 def render_bonnyvale_module():
     vk.init_bonnyvale_data()
     st.markdown("## 🍍 Veridian Agri Cloud | Bonnyvale Estates")
