@@ -1,59 +1,81 @@
 import streamlit as st
+import pandas as pd
+import time
 import vas_kernel as vk
 
-# NEW MODULAR IMPORTS
-import vas_admin as v_admin
-import vas_industry as v_ind
-import vas_logistics as v_log
+# --- PAGE CONFIG ---
+st.set_page_config(page_title="Veridian | Group OS", layout="wide", page_icon="🦅")
 
+# --- MODULAR IMPORTS (HIERARCHICAL) ---
+# We now import from the specific domain folders
+from vas_admin import render_admin_core
+from modules.industrial.sturrock import render_sturrock_dashboard
+from modules.agriculture.bonnyvale import render_bonnyvale_dashboard
+from modules.logistics.tte import render_tte_dashboard
+
+# --- LOGIN CHECK ---
 vk.set_design_system()
-
 if not vk.check_login():
     st.stop()
 
-with st.sidebar:
-    st.title("VAS | OS")
-    st.caption("Veridian Master Operating System")
+# --- SIDEBAR: THE NAVIGATION TREE ---
+st.sidebar.title("VAS | OS")
+st.sidebar.caption("Sovereign Operating System v7.1")
+
+# LEVEL 1: VIEW SELECTION
+view_mode = st.sidebar.radio("Clearance Level", ["Admin Core", "Industry Clouds"])
+
+if view_mode == "Admin Core":
+    render_admin_core()
+
+elif view_mode == "Industry Clouds":
+    st.sidebar.divider()
     
-    if st.session_state.user_role == "ADMIN":
-        st.markdown("Identity: **STRATEGIST**")
-        st.header("Admin Core")
-        menu = st.radio("Module", ["Central Command", "DealStream", "Hunter"])
-        st.divider()
-        st.header("Industry Clouds")
-        # Updated Title for S&R
-        industry_sim = st.selectbox("Vertical", ["Select...", "Industrial (Sturrock & Robson)", "Agri (Bonnyvale)", "Logistics (TTE)", "TTE Portal"])
-        
+    # LEVEL 2: INDUSTRY SELECTION (The Vertical)
+    selected_industry = st.sidebar.selectbox(
+        "Select Vertical",
+        ["Industrial", "Agriculture", "Logistics", "Energy (Prospecting)"]
+    )
+    
+    # LEVEL 3: COMPANY SELECTION (The Entity)
+    # This map allows us to scale. New clients are added here.
+    company_map = {
+        "Industrial": ["Sturrock & Robson", "Frontier Civil (Lead)"],
+        "Agriculture": ["Bonnyvale Estates", "Echo Farms (Lead)"],
+        "Logistics": ["Travel & Transport (TTE)", "Titan Logistics"],
+        "Energy (Prospecting)": ["No Active Assets"]
+    }
+    
+    selected_company = st.sidebar.selectbox(
+        "Select Entity",
+        company_map[selected_industry]
+    )
+    
+    # --- ROUTING ENGINE ---
+    # 1. INDUSTRIAL CLOUD
+    if selected_industry == "Industrial":
+        if selected_company == "Sturrock & Robson":
+            render_sturrock_dashboard()
+        else:
+            st.info(f"🚧 {selected_company} module is currently under development.")
+
+    # 2. AGRI CLOUD
+    elif selected_industry == "Agriculture":
+        if selected_company == "Bonnyvale Estates":
+            render_bonnyvale_dashboard()
+        else:
+            st.info(f"🚧 {selected_company} module is currently under development.")
+
+    # 3. LOGISTICS CLOUD
+    elif selected_industry == "Logistics":
+        if selected_company == "Travel & Transport (TTE)":
+            render_tte_dashboard()
+        else:
+            st.info(f"🚧 {selected_company} module is currently under development.")
+            
+    # 4. CATCH-ALL
     else:
-        st.markdown("Identity: **CLIENT**")
-        st.header("Operational Units")
-        menu = st.radio("View", ["Group Cockpit", "Industrial", "Agri", "Logistics"])
-    
-    st.divider()
-    if st.button("Log Out"): vk.logout()
+        st.warning("⚠️ No active modules loaded for this sector.")
 
-# ROUTING LOGIC
-if st.session_state.user_role == "ADMIN":
-    if industry_sim == "Select...":
-        if menu == "Central Command": v_admin.render_admin_home()
-        elif menu == "DealStream": v_admin.render_crm_module()
-        elif menu == "Hunter": v_admin.render_hunter_module()
-    
-    # UPDATED ROUTING TO NEW S&R MODULE
-    elif industry_sim == "Industrial (Sturrock & Robson)": 
-        v_ind.render_sturrock_robson_module()
-        
-    elif industry_sim == "Agri (Bonnyvale)": 
-        v_ind.render_bonnyvale_module()
-        
-    elif industry_sim == "Logistics (TTE)": 
-        v_log.render_logistics_cloud()
-        
-    elif industry_sim == "TTE Portal": 
-        v_log.render_tte_portal()
-
-elif st.session_state.user_role == "CLIENT":
-    if menu == "Group Cockpit": v_admin.render_admin_home()
-    elif menu == "Industrial": v_ind.render_sturrock_robson_module() # UPDATED
-    elif menu == "Agri": v_ind.render_bonnyvale_module()
-    elif menu == "Logistics": v_log.render_logistics_cloud()
+st.sidebar.divider()
+if st.sidebar.button("Log Out"): vk.logout()
