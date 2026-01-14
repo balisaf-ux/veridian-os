@@ -7,10 +7,14 @@ from modules.logistics.db_utils import init_db, load_data, run_query
 # --- MODULAR IMPORTS ---
 from modules.logistics.constants import DIESEL_PRICE, CORRIDORS
 from modules.logistics.services import calculate_route_economics
+from modules.logistics.models import inject_sovereign_data
+from modules.logistics.rules import enrich_fleet_data
+from modules.logistics.gps_engine import run_gps_simulation
+from modules.logistics.views.gps_console import render_gps_console
+
 
 # --- VIEW IMPORTS ---
 from modules.logistics.views.dispatch import render_dispatch_console
-from modules.logistics.rules import enrich_fleet_data
 from modules.logistics.dealstream import render_dealstream_marketplace
 from modules.logistics.views.risk_compliance import render_risk_view
 from modules.logistics.views.customer_portal import render_customer_wizard
@@ -69,7 +73,8 @@ def render_logistics_vertical():
         "📱 Driver",
         "🏦 Finance",
         "🛡️ Risk & Fuel",
-        "🤖 Portal"
+        "🤖 Portal",
+        "📡 GPS Engine"
     ])
 
     # MARKET
@@ -122,7 +127,10 @@ def render_logistics_vertical():
     # PORTAL
     with tabs[7]:
         render_customer_wizard()
-
+        
+    # GPS
+    with tabs[8]:
+        render_gps_console()
 
 if __name__ == "__main__":
     render_logistics_vertical()

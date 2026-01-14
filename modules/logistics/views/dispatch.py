@@ -3,26 +3,14 @@ import pandas as pd
 import time
 from datetime import datetime
 
-# --- ROBUST IMPORTS ---
-try:
-    from .db_utils import load_data, run_query
-except ImportError:
-    try:
-        from ..db_utils import load_data, run_query
-    except ImportError:
-        from modules.logistics.db_utils import load_data, run_query
+# --- ROBUST IMPORTS (CLEAN, SINGLE-SOURCE, NO FALLBACKS) ---
+from modules.logistics.db_utils import load_data, run_query
 
 # Import Service / Logic Modules
-try:
-    from modules.logistics.models import inject_sovereign_data
-    from modules.logistics.services import validate_physics_handshake, generate_dispatch_docs
-    from modules.logistics.rules import enrich_fleet_data
-except ImportError:
-    # Fallback/Mock for standalone testing
-    def inject_sovereign_data(): st.warning("Mock Injection")
-    def validate_physics_handshake(*args): return True
-    def enrich_fleet_data(df): return df
-    def generate_dispatch_docs(trip): return b"%PDF-1.4\n% Placeholder Dispatch Pack\n"
+from modules.logistics.models import inject_sovereign_data
+from modules.logistics.services import validate_physics_handshake, generate_dispatch_docs
+from modules.logistics.rules import enrich_fleet_data
+from modules.logistics.gps_engine import run_gps_simulation
 
 # -------------------------------------------------------------------
 # MAIN DISPATCH CONSOLE
