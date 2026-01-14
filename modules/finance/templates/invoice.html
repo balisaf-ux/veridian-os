@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAIS | Transaction Node</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --command-blue: #1B2631; 
+            --lighter-blue: #2C3E50;
+            --tech-blue: #38bdf8;
+            --sovereign-gold: #D4AF37; 
+            --success-green: #10B981;
+            --alert-red: #EF4444;
+        }
+        
+        body {
+            background-color: var(--command-blue);
+            color: #ECF0F1;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* App feel, no scroll */
+        }
+
+        /* --- UI UTILITIES --- */
+        .glass-panel {
+            background: rgba(27, 38, 49, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+        }
+        
+        .glass-panel-active {
+            background: rgba(27, 38, 49, 0.8);
+            border: 1px solid var(--sovereign-gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .gold-text { color: var(--sovereign-gold); }
+        .tech-text { color: var(--tech-blue); }
+
+        /* Scrollbar hiding for internal panels */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Animations */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 100px;
+            background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.1), transparent);
+            animation: scanline 4s linear infinite;
+            pointer-events: none;
+        }
+
+        .blink { animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <nav class="h-14 border-b border-white/10 bg-[#151e27] flex items-center justify-between px-6 shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="text-2xl font-black text-[#D4AF37] tracking-tighter">MAIS</div>
+            <div class="h-4 w-px bg-white/20"></div>
+            <div class="text-xs tracking-widest uppercase text-white/50">Finance Core <span class="text-[#D4AF37]">::</span> Invoice Engine</div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-green-500 rounded-full blink"></div>
+                <span class="text-[10px] mono text-green-500">LIVE FEED: INDUSTRIAL_IOT_V4</span>
+            </div>
+            <div class="text-[10px] mono text-white/40">SESSION_ID: 0X99_ADMIN</div>
+        </div>
+    </nav>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <aside class="w-80 border-r border-white/10 bg-[#18222c] flex flex-col">
+            <div class="p-4 border-b border-white/10">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-[#38bdf8] mb-1">Incoming Triggers</h3>
+                <p class="text-[10px] text-white/40">Real-time operational events pending capitalization.</p>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto no-scrollbar p-2 space-y-2">
+                <div class="p-3 bg-white/5 border border-white/5 rounded hover:bg-white/10 cursor-pointer transition border-l-2 border-l-[#38bdf8]">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[9px] mono bg-[#38bdf8]/20 text-[#38bdf8] px-1 rounded">LOGISTICS</span>
+                        <span class="text-[9px] text-white/40">09:42:12</span>
+                    </div>
+                    <div class="text-sm font-bold text-white mb-1">Delivery Confirmed</div>
+                    <div class="text-[10px] text-white/60 mb-2">Ref: TRUCK_ZA_992 // Client: Apex Mining</div>
+                    <div class="text-[9px] mono text-green-400">Proof of Delivery: VERIFIED</div>
+                </div>
+
+                <div class="p-3 bg-[#D4AF37]/10 border border-[#D4AF37] rounded cursor-pointer relative overflow-hidden">
+                    <div class="scan-line"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[9px] mono bg-[#D4AF37]/20 text-[#D4AF37] px-1 rounded">INDUSTRIAL</span>
+                        <span class="text-[9px] text-[#D4AF37]">NOW</span>
+                    </div>
+                    <div class="text-sm font-bold text-white mb-1">Batch Completion</div>
+                    <div class="text-[10px] text-white/60 mb-2">Ref: SENSOR_901 // Client: Orion Energy</div>
+                    <div class="text-[9px] mono text-green-400">Output: 4500 Units / 98% Quality</div>
+                </div>
+
+                <div class="p-3 bg-white/5 border border-white/5 rounded hover:bg-white/10 cursor-pointer transition border-l-2 border-l-white/20">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-[9px] mono bg-white/10 text-white/50 px-1 rounded">SERVICE</span>
+                        <span class="text-[9px] text-white/40">09:15:00</span>
+                    </div>
+                    <div class="text-sm font-bold text-white/60 mb-1">Consulting Hours</div>
+                    <div class="text-[10px] text-white/40 mb-2">Ref: TIMESHEET_ENG // Client: City Council</div>
+                    <div class="text-[9px] mono text-yellow-500">Pending Approval</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-[#131b24] p-8 relative flex flex-col items-center justify-center">
+            
+            <div class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20" 
+                 style="background-image: radial-gradient(#38bdf8 1px, transparent 1px); background-size: 40px 40px;">
+            </div>
+
+            <div class="glass-panel w-full max-w-3xl h-full flex flex-col shadow-2xl relative z-10">
+                <div class="h-16 border-b border-white/10 flex justify-between items-center px-8 bg-black/20">
+                    <div class="flex items-center gap-3">
+                        <div class="text-[#D4AF37] mono text-xl font-bold">INV-2026-00492</div>
+                        <div class="text-[10px] uppercase tracking-widest bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded">Draft Protocol</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[9px] text-white/40 uppercase tracking-widest">Target Entity</div>
+                        <div class="text-sm font-bold text-white">ORION ENERGY LTD.</div>
+                    </div>
+                </div>
+
+                <div class="flex-1 p-8 overflow-y-auto">
+                    <div class="mb-8 p-4 border border-[#38bdf8]/30 bg-[#38bdf8]/5 rounded flex justify-between items-center">
+                        <div>
+                            <div class="text-[10px] mono text-[#38bdf8] mb-1">LINKED EVENT SOURCE</div>
+                            <div class="text-white text-sm">Industrial Sensor Array #04</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[10px] mono text-[#38bdf8] mb-1">DATA HASH</div>
+                            <div class="text-white text-xs mono">8f92a...c41</div>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-left mb-8">
+                        <thead>
+                            <tr class="border-b border-white/10 text-[10px] text-white/40 uppercase tracking-widest">
+                                <th class="pb-3 w-1/2">Description</th>
+                                <th class="pb-3 text-right">Qty</th>
+                                <th class="pb-3 text-right">Unit Price</th>
+                                <th class="pb-3 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <tr class="border-b border-white/5">
+                                <td class="py-4 text-white">
+                                    Heavy Fuel Oil (HFO) - Grade A
+                                    <div class="text-[10px] text-white/40 mt-1">Sulphur content < 1% verified via spectral analysis</div>
+                                </td>
+                                <td class="py-4 text-right mono text-white/80">4,500 L</td>
+                                <td class="py-4 text-right mono text-white/80">R 22.50</td>
+                                <td class="py-4 text-right mono text-white font-bold">R 101,250.00</td>
+                            </tr>
+                            <tr>
+                                <td class="py-4 text-white">
+                                    Transport Surcharge (Zone 4)
+                                    <div class="text-[10px] text-white/40 mt-1">Auto-calculated via GPS Distance</div>
+                                </td>
+                                <td class="py-4 text-right mono text-white/80">1</td>
+                                <td class="py-4 text-right mono text-white/80">R 3,500.00</td>
+                                <td class="py-4 text-right mono text-white font-bold">R 3,500.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="flex justify-end">
+                        <div class="w-1/2 space-y-3">
+                            <div class="flex justify-between text-xs text-white/60">
+                                <span>Subtotal</span>
+                                <span class="mono">R 104,750.00</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-white/60">
+                                <span>VAT (15%)</span>
+                                <span class="mono">R 15,712.50</span>
+                            </div>
+                            <div class="border-t border-white/20 pt-3 flex justify-between items-baseline">
+                                <span class="text-[#D4AF37] font-bold uppercase tracking-widest text-sm">Amount Due</span>
+                                <span class="text-2xl font-bold text-[#D4AF37] mono">R 120,462.50</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 border-t border-white/10 bg-black/20 flex justify-between items-center">
+                    <div class="flex gap-2">
+                         <div class="text-[10px] mono text-white/30 border border-white/10 px-2 py-1 rounded">TERMS: NET 30</div>
+                         <div class="text-[10px] mono text-white/30 border border-white/10 px-2 py-1 rounded">CURRENCY: ZAR</div>
+                    </div>
+                    <button class="bg-[#D4AF37] hover:bg-[#F1C40F] text-[#1B2631] px-6 py-2 text-xs font-bold uppercase tracking-widest rounded shadow-[0_0_15px_rgba(212,175,55,0.4)] transition hover:scale-105 flex items-center gap-2">
+                        <span>Execute Protocol</span>
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <aside class="w-72 border-l border-white/10 bg-[#18222c] p-6 flex flex-col gap-6">
+            
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-widest text-white mb-4">Ledger Impact</h3>
+                <div class="space-y-3">
+                    <div class="p-3 bg-black/30 border border-white/5 rounded">
+                        <div class="text-[9px] text-white/40 mb-1">DEBIT</div>
+                        <div class="text-sm font-bold text-white">Accounts Receivable</div>
+                        <div class="text-xs mono text-green-400 mt-1">+ R 120,462.50</div>
+                    </div>
+                    <div class="p-3 bg-black/30 border border-white/5 rounded">
+                        <div class="text-[9px] text-white/40 mb-1">CREDIT</div>
+                        <div class="text-sm font-bold text-white">Sales Revenue</div>
+                        <div class="text-xs mono text-[#38bdf8] mt-1">+ R 104,750.00</div>
+                    </div>
+                    <div class="p-3 bg-black/30 border border-white/5 rounded">
+                        <div class="text-[9px] text-white/40 mb-1">CREDIT</div>
+                        <div class="text-sm font-bold text-white">VAT Output</div>
+                        <div class="text-xs mono text-white/60 mt-1">+ R 15,712.50</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col justify-end">
+                <div class="border border-[#D4AF37]/30 bg-[#D4AF37]/5 p-4 rounded relative">
+                    <div class="absolute -top-2 left-3 bg-[#18222c] px-1 text-[9px] text-[#D4AF37] mono uppercase">Cortex Analysis</div>
+                    <p class="text-xs text-white/70 leading-relaxed">
+                        Client <span class="text-white font-bold">Orion Energy</span> is currently at 85% of credit limit. This transaction is approved but nears the threshold.
+                    </p>
+                    <div class="mt-3 h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-yellow-500 w-[85%]"></div>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+</body>
+</html>

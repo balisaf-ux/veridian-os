@@ -1,0 +1,22 @@
+SYSTEM MANIFEST | VERIDIAN CORTEX v12.0
+STATUS: LOCKED
+
+[CORE KERNEL]
+- db_manager.py MUST CONTAIN:
+  - init_db()
+  - save_strategic_target()  [War Room]
+  - save_trade_deal()        [Trade]
+  - log_supplier_bid()       [Trade]
+  - set_annual_target()      [Admin]
+
+[MODULES]
+- Admin Core:      OPERATIONAL (Engine Room)
+- War Room:        OPERATIONAL (Magisterial Map)
+- Trade:           OPERATIONAL (Fusion v10.2 Logic)
+- Logistics:       PENDING (Next Sprint)
+- Finance:         PENDING (Next Sprint)
+
+[PROTOCOL]
+- DO NOT DELETE 'prospects' table.
+- DO NOT DELETE 'trade_deals' table.
+- ALL UPDATES MUST BE ADDITIVE.
