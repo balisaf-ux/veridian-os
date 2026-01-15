@@ -27,7 +27,7 @@ except ImportError:
             return {
                 "username": "Admin",
                 "role": "Sovereign",
-                "modules": ["UNIVERSAL"]  # list, not string
+                "modules": ["UNIVERSAL"]
             }
         return None
 
@@ -42,7 +42,7 @@ is_cloud = (
 )
 
 # =========================================================
-# 3. UI CONFIGURATION & AESTHETICS
+# 3. UI CONFIGURATION & AESTHETICS (WHITE / BLUE / RED / BLACK)
 # =========================================================
 st.set_page_config(
     page_title="MAIS | Magisterial AI Systems",
@@ -56,48 +56,69 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
     :root { 
-        --command-white: #FFFFFF; 
-        --text-black: #0F172A;
-        --sovereign-gold: #D4AF37; 
+        --white: #FFFFFF;
+        --black: #0F172A;
+        --blue: #0F3D91;
+        --red: #C1121F;
     }
-    
+
     .stApp { 
-        background-color: var(--command-white) !important; 
+        background-color: var(--white) !important; 
         background-image: none !important;
-        color: var(--text-black) !important;
+        color: var(--black) !important;
         font-family: 'Inter', sans-serif;
     }
 
+    /* Clean Containers */
     [data-testid="stForm"] {
         background: #F8FAFC !important;
         border: 1px solid #E2E8F0 !important;
         border-radius: 8px !important;
         padding: 2rem !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    h1, h2, h3 { color: #000000 !important; font-weight: 800 !important; }
+    h1, h2, h3 { 
+        color: var(--black) !important; 
+        font-weight: 800 !important; 
+    }
 
-    .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #E2E8F0 !important; }
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { 
+        border-bottom: 2px solid #E2E8F0 !important; 
+    }
     .stTabs [aria-selected="true"] { 
-        color: var(--sovereign-gold) !important; 
-        border-bottom: 3px solid var(--sovereign-gold) !important;
+        color: var(--blue) !important; 
+        border-bottom: 3px solid var(--blue) !important;
     }
 
-    div.stButton > button, div[data-testid="stFormSubmitButton"] > button {
-        background-color: var(--sovereign-gold) !important;
-        color: #FFFFFF !important;
+    /* Buttons */
+    div.stButton > button, 
+    div[data-testid="stFormSubmitButton"] > button {
+        background-color: var(--blue) !important;
+        color: var(--white) !important;
         font-weight: 700 !important;
         border: none !important;
         text-transform: uppercase !important;
     }
 
+    /* Sidebar */
     section[data-testid="stSidebar"] {
         background-color: #F8FAFC !important;
         border-right: 1px solid #E2E8F0 !important;
     }
-    
-    .mono-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #64748B; font-weight: 700; }
+
+    .mono-label { 
+        font-family: 'JetBrains Mono', monospace; 
+        font-size: 11px; 
+        color: #64748B; 
+        font-weight: 700; 
+    }
+
+    /* Alerts */
+    .stAlert { 
+        border-left: 4px solid var(--red) !important; 
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -111,11 +132,12 @@ def run_gatekeeper():
     if st.session_state["user_session"]:
         return st.session_state["user_session"]
 
+    # LOGIN UI
     st.markdown("""
         <div style="display:flex;justify-content:space-between;align-items:center;
-        padding:1rem 0;margin-bottom:2rem;border-bottom:2px solid #D4AF37;">
+        padding:1rem 0;margin-bottom:2rem;border-bottom:2px solid #0F3D91;">
             <div style="display:flex;align-items:center;gap:15px;">
-                <span style="font-size:1.8rem;font-weight:900;color:#D4AF37;">MAIS</span>
+                <span style="font-size:1.8rem;font-weight:900;color:#0F3D91;">MAIS</span>
                 <div style="width:1px;height:20px;background:#CBD5E1;"></div>
                 <span style="font-size:10px;color:#64748B;text-transform:uppercase;
                 letter-spacing:2px;font-weight:600;">Corporate Portal</span>
@@ -129,7 +151,7 @@ def run_gatekeeper():
 
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.markdown("<h1 style='text-align:center;font-size:5rem;color:#000;'>MAIS</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align:center;font-size:5rem;color:#0F3D91;'>MAIS</h1>", unsafe_allow_html=True)
         st.markdown("<p style='text-align:center;letter-spacing:0.3em;color:#64748B; margin-top:-15px;font-weight:600;'>THE CORPORATE CORTEX</p>", unsafe_allow_html=True)
 
         tab_login, tab_req = st.tabs(["🔒 SECURE LOGIN", "📝 PORTAL ACCESS"])
@@ -148,7 +170,7 @@ def run_gatekeeper():
                         st.rerun()
                     else:
                         st.error("🚫 Access Denied")
-        
+
         with tab_req:
             st.info("Verified Access required for Tier-1 Procurement Executives.")
             st.text_input("FULL NAME & TITLE")
@@ -178,13 +200,13 @@ def main():
             render_logistics_vertical()
         except Exception as e:
             st.error(f"⚠️ Logistics Portal Error: {e}")
-        return  # hard firewall
+        return
 
     # -------------------------------
     # PATH B — SOVEREIGN ACCESS
     # -------------------------------
     with st.sidebar:
-        st.markdown(f"<h2 style='color:#D4AF37;'>MAIS | OS</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='color:#0F3D91;'>MAIS | OS</h2>", unsafe_allow_html=True)
         st.markdown(
             f"<div style='font-size:11px;color:#64748B;'>USER: {current_user['username']}</div>",
             unsafe_allow_html=True
@@ -205,7 +227,7 @@ def main():
             st.rerun()
 
     # -------------------------------
-    # ROUTING ENGINE (Sovereign Only)
+    # ROUTING ENGINE
     # -------------------------------
     try:
         if menu == "Financial Control":
@@ -245,4 +267,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
