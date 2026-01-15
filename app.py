@@ -1,195 +1,248 @@
 import streamlit as st
 import os
 import sys
-import time
 
-# --- IMPORTS (DEPENDENCIES) ---
-# This links the "Engine Room" (dashboard.py) to the main switchboard.
+# =========================================================
+# 1. CORE DEPENDENCIES & IMPORTS
+# =========================================================
 try:
     from modules.admin.dashboard import render_admin_core
-    # Security Import (Ensure modules/security/auth.py exists)
-    from modules.security.auth import login_user 
+    from modules.security.auth import login_user
 except ImportError:
-    # Fallback prevents crash if security module is missing during setup
-    def login_user(u, p): return {"username": "Admin", "role": "Sovereign", "modules": "UNIVERSAL"}
+    # Fail CLOSED by default — only explicit test backdoors allowed
+    def login_user(u, p):
+        # Optional: test-only guest backdoor for Logistics
+        if u == "MAIS_GUEST_24H" and p == "LOGISTICS_PORTAL_2026":
+            return {
+                "username": "Guest_Procurement",
+                "role": "External_Auditor",
+                "modules": ["Logistics Cloud"]
+            }
+        # Optional: dev-only sovereign backdoor, guarded by env
+        if (
+            os.environ.get("MAIS_DEV_BACKDOOR") == "ENABLED"
+            and u == "Balisa"
+            and p == "MAIS_SOVEREIGN"
+        ):
+            return {
+                "username": "Admin",
+                "role": "Sovereign",
+                "modules": ["UNIVERSAL"]  # list, not string
+            }
+        return None
 
-# --- 1. SYSTEM CONFIGURATION (MUST BE FIRST) ---
-st.set_page_config(
-    page_title="MAIS | Sovereign Command",
-    page_icon="🦅",
-    layout="wide",
-    initial_sidebar_state="collapsed" # Collapsed at launch for Login Screen focus
+sys.path.append(os.getcwd())
+
+# =========================================================
+# 2. ENVIRONMENT DETECTION
+# =========================================================
+is_cloud = (
+    "streamlit.app" in st.query_params.get("url", [""])[0]
+    or os.environ.get("STREAMLIT_RUNTIME_ENV") == "cloud"
 )
 
-# --- 2. MAGISTERIAL VISUAL TEXTURE (CSS INJECTION) ---
+# =========================================================
+# 3. UI CONFIGURATION & AESTHETICS
+# =========================================================
+st.set_page_config(
+    page_title="MAIS | Magisterial AI Systems",
+    page_icon="🦅",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 st.markdown("""
     <style>
-    /* GLOBAL DARK NAVY THEME */
-    .stApp { background-color: #0e1117; color: #e0e0e0; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    :root { 
+        --command-white: #FFFFFF; 
+        --text-black: #0F172A;
+        --sovereign-gold: #D4AF37; 
+    }
     
-    /* SIDEBAR & METRICS */
-    section[data-testid="stSidebar"] { background-color: #161920; border-right: 1px solid #333; }
-    div[data-testid="stMetric"] { background-color: #1a1c24; border: 1px solid #333; border-radius: 4px; padding: 10px; }
-    div[data-testid="stMetricValue"] { color: #d4af37 !important; } /* Gold Data */
+    .stApp { 
+        background-color: var(--command-white) !important; 
+        background-image: none !important;
+        color: var(--text-black) !important;
+        font-family: 'Inter', sans-serif;
+    }
+
+    [data-testid="stForm"] {
+        background: #F8FAFC !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 8px !important;
+        padding: 2rem !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    h1, h2, h3 { color: #000000 !important; font-weight: 800 !important; }
+
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #E2E8F0 !important; }
+    .stTabs [aria-selected="true"] { 
+        color: var(--sovereign-gold) !important; 
+        border-bottom: 3px solid var(--sovereign-gold) !important;
+    }
+
+    div.stButton > button, div[data-testid="stFormSubmitButton"] > button {
+        background-color: var(--sovereign-gold) !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        border: none !important;
+        text-transform: uppercase !important;
+    }
+
+    section[data-testid="stSidebar"] {
+        background-color: #F8FAFC !important;
+        border-right: 1px solid #E2E8F0 !important;
+    }
     
-    /* HEADERS & ACCENTS */
-    h1, h2, h3 { color: #d4af37 !important; font-family: 'Segoe UI', sans-serif; letter-spacing: 1px; }
-    
-    /* INPUTS & BUTTONS */
-    .stTextInput > div > div > input { background-color: #0e1117; color: #fff; border: 1px solid #444; }
-    .stTextInput > div > div > input:focus { border-color: #d4af37; }
-    div.stButton > button { background-color: #d4af37; color: #000; border: none; font-weight: bold; }
-    div.stButton > button:hover { background-color: #fff; color: #000; }
+    .mono-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #64748B; font-weight: 700; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SOVEREIGN BOOTLOADER ---
-# Forces Python to see the root 'project_cortex' folder as the package home.
-sys.path.append(os.getcwd())
-
-# --- 4. KERNEL INITIALIZATION ---
-try:
-    from modules.core.db_manager import init_db
-    init_db()
-except ImportError as e:
-    # Non-blocking error (allows app to run even if DB init fails momentarily)
-    print(f"⚠️ KERNEL WARNING: {e}")
-
-# --- 5. GATEKEEPER PROTOCOL (SECURITY LAYER) ---
+# =========================================================
+# 4. SECURITY GATEKEEPER
+# =========================================================
 def run_gatekeeper():
-    """Intercepts traffic. Returns User Session if authenticated."""
     if "user_session" not in st.session_state:
         st.session_state["user_session"] = None
 
     if st.session_state["user_session"]:
         return st.session_state["user_session"]
 
-    # --- LOGIN PORTAL UI ---
+    st.markdown("""
+        <div style="display:flex;justify-content:space-between;align-items:center;
+        padding:1rem 0;margin-bottom:2rem;border-bottom:2px solid #D4AF37;">
+            <div style="display:flex;align-items:center;gap:15px;">
+                <span style="font-size:1.8rem;font-weight:900;color:#D4AF37;">MAIS</span>
+                <div style="width:1px;height:20px;background:#CBD5E1;"></div>
+                <span style="font-size:10px;color:#64748B;text-transform:uppercase;
+                letter-spacing:2px;font-weight:600;">Corporate Portal</span>
+            </div>
+            <div style="display:flex;gap:20px;font-size:11px;font-weight:700;
+            text-transform:uppercase;color:#0F172A;">
+                <span>Trade</span><span>Logistics</span><span>Industrial</span><span>Retail</span>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.write(""); st.write("")
-        st.markdown("<h1 style='text-align: center; color: #d4af37;'>🦅 MAIS</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #888;'>MAGISTERIAL AI SYSTEMS | v16.8</p>", unsafe_allow_html=True)
-        
-        tab_login, tab_req = st.tabs(["🔑 Command Login", "📝 Request Access"])
-        
+        st.markdown("<h1 style='text-align:center;font-size:5rem;color:#000;'>MAIS</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center;letter-spacing:0.3em;color:#64748B; margin-top:-15px;font-weight:600;'>THE CORPORATE CORTEX</p>", unsafe_allow_html=True)
+
+        tab_login, tab_req = st.tabs(["🔒 SECURE LOGIN", "📝 PORTAL ACCESS"])
+
         with tab_login:
             with st.form("login_form"):
-                u = st.text_input("Username")
-                p = st.text_input("Password", type="password")
-                if st.form_submit_button("Initialize Uplink", use_container_width=True):
+                st.markdown("<div class='mono-label'>Neural Link ID</div>", unsafe_allow_html=True)
+                u = st.text_input("", label_visibility="collapsed", placeholder="Username")
+                st.markdown("<div class='mono-label'>Cipher Sequence</div>", unsafe_allow_html=True)
+                p = st.text_input("", type="password", label_visibility="collapsed", placeholder="Password")
+                
+                if st.form_submit_button("INITIALIZE SEQUENCE", use_container_width=True):
                     user = login_user(u, p)
                     if user:
                         st.session_state["user_session"] = user
-                        st.toast("Identity Verified. Accessing Core...", icon="🦅")
-                        time.sleep(0.5)
                         st.rerun()
                     else:
                         st.error("🚫 Access Denied")
         
         with tab_req:
-            st.info("For Tier-1 Procurement Executives.")
-            st.text_input("Corporate Email")
-            if st.button("Request Verification", use_container_width=True):
+            st.info("Verified Access required for Tier-1 Procurement Executives.")
+            st.text_input("FULL NAME & TITLE")
+            st.text_input("CORPORATE EMAIL")
+            if st.button("REQUEST VERIFICATION", use_container_width=True):
                 st.success("Request Transmitted to Sovereign Command.")
 
-    st.stop() # HALT APP EXECUTION HERE
+    st.stop()
 
-# ACTIVATE GATES
-current_user = run_gatekeeper()
-
-# --- 6. MAIN APPLICATION ROUTER (YOUR BASELINE) ---
+# =========================================================
+# 5. MAIN APPLICATION ENGINE
+# =========================================================
 def main():
-    # --- SIDEBAR: EXECUTIVE COMMAND ---
-    with st.sidebar:
-        st.title("MAIS | OS")
-        st.caption(f"User: {current_user['username']} | Role: {current_user['role']}")
-        st.markdown("---")
-        
-        # Determine Menu Options based on Role
-        # If user has "UNIVERSAL" access, they see everything.
-        all_options = [
-            "Admin Core", 
-            "Magisterial Mercantile",
-            "Magisterial Trade",
-            "Retail Operations",
-            "War Room (Prospecting)", 
-            "Logistics Cloud",
-            "Industrial Portal (Sourcing)",
-            "Financial Control"
-        ]
-        
-        # RBAC Filtering (Optional: You can enable strict filtering here later)
-        if current_user.get("modules") == "UNIVERSAL":
-            available_modules = all_options
-        else:
-            # Fallback for now to show all, or filter if you implemented the list in auth.py
-            available_modules = all_options 
+    current_user = run_gatekeeper()
+    role = current_user.get("role")
 
-        menu = st.radio("Select Command Module", available_modules)
-        
-        st.markdown("---")
-        if st.button("🔒 Log Out"):
-            st.session_state["user_session"] = None
-            st.rerun()
-
-    # --- MAIN DECK: ROUTING LOGIC ---
-    
-    # A. FINANCIAL CONTROL
-    if menu == "Financial Control":
-        try:
-            from modules.finance.app import render_finance_vertical
-            render_finance_vertical()
-        except Exception as e: st.error(f"⚠️ Finance Module Crash: {e}")
-            
-    # B. LOGISTICS
-    elif menu == "Logistics Cloud":            
+    # -------------------------------
+    # PATH A — GUEST / CLOUD ACCESS
+    # -------------------------------
+    if is_cloud or role == "External_Auditor":
+        st.markdown(
+            "<style>section[data-testid='stSidebar']{display:none!important;}</style>",
+            unsafe_allow_html=True
+        )
         try:
             from modules.logistics.app import render_logistics_vertical
             render_logistics_vertical()
-        except Exception as e: st.error(f"⚠️ Logistics Module Crash: {e}")
+        except Exception as e:
+            st.error(f"⚠️ Logistics Portal Error: {e}")
+        return  # hard firewall
 
-    # C. MAGISTERIAL MERCANTILE
-    elif menu == "Magisterial Mercantile":
-        try:
+    # -------------------------------
+    # PATH B — SOVEREIGN ACCESS
+    # -------------------------------
+    with st.sidebar:
+        st.markdown(f"<h2 style='color:#D4AF37;'>MAIS | OS</h2>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='font-size:11px;color:#64748B;'>USER: {current_user['username']}</div>",
+            unsafe_allow_html=True
+        )
+        st.markdown("---")
+
+        sovereign_modules = [
+            "Admin Core", "Magisterial Mercantile", "Magisterial Trade",
+            "Retail Operations", "War Room (Prospecting)",
+            "Logistics Cloud", "Industrial Portal (Sourcing)", "Financial Control"
+        ]
+
+        menu = st.radio("Select Command Module", sovereign_modules)
+
+        st.markdown("---")
+        if st.button("🔒 TERMINATE SESSION"):
+            st.session_state["user_session"] = None
+            st.rerun()
+
+    # -------------------------------
+    # ROUTING ENGINE (Sovereign Only)
+    # -------------------------------
+    try:
+        if menu == "Financial Control":
+            from modules.finance.app import render_finance_vertical
+            render_finance_vertical()
+
+        elif menu == "Logistics Cloud":
+            from modules.logistics.app import render_logistics_vertical
+            render_logistics_vertical()
+
+        elif menu == "Magisterial Mercantile":
             from modules.mercantile.app import render_mercantile_vertical
             render_mercantile_vertical()
-        except ImportError: st.error("⚠️ Mercantile Module Not Found.")
-        except Exception as e: st.error(f"⚠️ Mercantile Module Crash: {e}")
 
-    # D. MAGISTERIAL TRADE
-    elif menu == "Magisterial Trade":
-        try:
+        elif menu == "Magisterial Trade":
             from modules.trade.app import render_trade_vertical
             render_trade_vertical()
-        except Exception as e: st.error(f"⚠️ Trade Module Crash: {e}")
 
-    # E. RETAIL OPERATIONS
-    elif menu == "Retail Operations":
-        try:
+        elif menu == "Retail Operations":
             from modules.retail.app import render_retail_vertical
             render_retail_vertical()
-        except ImportError: st.error("⚠️ Retail Module Missing.")
-        except Exception as e: st.error(f"⚠️ Retail Module Crash: {e}")
 
-    # F. WAR ROOM
-    elif menu == "War Room (Prospecting)":
-        try:
+        elif menu == "War Room (Prospecting)":
             from modules.prospecting.app import render_prospecting_vertical
             render_prospecting_vertical()
-        except Exception as e: st.error(f"⚠️ War Room Crash: {e}")
 
-    # G. INDUSTRIAL PORTAL
-    elif menu == "Industrial Portal (Sourcing)":
-        try:
+        elif menu == "Industrial Portal (Sourcing)":
             from modules.industrial.app import render_industrial_vertical
             render_industrial_vertical()
-        except ImportError: st.error("⚠️ Industrial Module Missing.")
-        except Exception as e: st.error(f"⚠️ Industrial Portal Crash: {e}")
 
-    # H. ADMIN CORE
-    elif menu == "Admin Core":
-        render_admin_core()
+        elif menu == "Admin Core":
+            render_admin_core()
+
+    except Exception as e:
+        st.error(f"⚠️ Module Crash: {e}")
+
 
 if __name__ == "__main__":
     main()
+
