@@ -3,6 +3,13 @@
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text
+st.session_state["user_session"] = {
+    "username": "Dev",
+    "role": "Sovereign"
+}
+
+from modules.logistics.app import render_logistics_vertical
+render_logistics_vertical()
 
 # =========================================================
 # MAIS VERTICAL METADATA

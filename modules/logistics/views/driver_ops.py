@@ -1,24 +1,27 @@
 import streamlit as st
 from datetime import datetime
 
-from modules.logistics.db_utils import load_data, run_query
-from modules.logistics.rules import enrich_fleet_data
+# Robust imports
+try:
+    from modules.logistics.db_utils import load_data, run_query
+    from modules.logistics.rules import enrich_fleet_data
+except ImportError:
+    from ..db_utils import load_data, run_query
+    from ..rules import enrich_fleet_data
 
 
 # =========================================================
-# DRIVER PORTAL (SHELL)
+# DRIVER PORTAL (SOVEREIGN-ALIGNED)
 # =========================================================
+
 def render_driver_portal(df_fleet_raw):
 
-    # Always enrich locally to guarantee mission fields exist
     df_fleet = enrich_fleet_data(df_fleet_raw.copy())
 
     st.markdown("## 🚛 Driver Portal | Mission Control")
 
-    # Availability roster
     render_availability_roster(df_fleet)
 
-    # Driver identity
     drivers = ["Solomon M.", "David K.", "Thomas Z.", "Samson J.", "Michael B."]
     driver_id = st.selectbox("👤 Select Operator", ["-- Select --"] + drivers)
 
@@ -33,7 +36,6 @@ def render_driver_portal(df_fleet_raw):
         """
     )
 
-    # Tabs
     tab_mission, tab_start, tab_handover, tab_incident = st.tabs([
         "⚡ Active Mission",
         "🚀 Start Mission",
@@ -57,8 +59,8 @@ def render_driver_portal(df_fleet_raw):
 # =========================================================
 # AVAILABILITY ROSTER
 # =========================================================
-def render_availability_roster(df_fleet):
 
+def render_availability_roster(df_fleet):
     st.subheader("🧭 Live Driver & Fleet Roster")
 
     if df_fleet.empty:
@@ -81,6 +83,7 @@ def render_availability_roster(df_fleet):
 # =========================================================
 # ACTIVE MISSION VIEW
 # =========================================================
+
 def show_active_mission(driver_id, df_fleet):
 
     active = df_fleet[
@@ -102,11 +105,12 @@ def show_active_mission(driver_id, df_fleet):
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Status", row["status_signal"])
-    c2.metric("Location", row["location_clean"])
+    c2.metric("Movement", row["movement_status"])
     c3.metric("Vehicle", reg)
 
     st.caption(f"Mission Status: **{row['mission_status']}**")
     st.caption(f"Started: {row['mission_start']}")
+
     st.divider()
 
     # ARRIVAL
@@ -152,8 +156,9 @@ def show_active_mission(driver_id, df_fleet):
 
 
 # =========================================================
-# START MISSION (HYBRID GATEKEEPER)
+# START MISSION (PRE-TRIP)
 # =========================================================
+
 def show_start_mission(driver_id, df_fleet):
 
     idle = df_fleet[df_fleet["is_idle"]]["reg_number"].tolist()
@@ -200,7 +205,7 @@ def show_start_mission(driver_id, df_fleet):
         st.error("Critical items missing:\n- " + "\n- ".join(critical_missing))
 
     if noncritical_missing:
-        st.warning("Non‑critical items missing (will be logged):\n- " + "\n- ".join(noncritical_missing))
+        st.warning("Non‑critical items missing:\n- " + "\n- ".join(noncritical_missing))
 
     if st.button("START MISSION", type="primary"):
 
@@ -208,17 +213,14 @@ def show_start_mission(driver_id, df_fleet):
             st.error("Enter a mission name.")
             return
 
-        # Block if critical missing
         if critical_missing:
             log_pretrip_event(driver_id, reg, mission_name, "PRETRIP_BLOCKED", critical_missing, noncritical_missing)
             st.error("Mission blocked due to critical safety issues.")
             return
 
-        # Log non-critical exceptions
         if noncritical_missing:
             log_pretrip_event(driver_id, reg, mission_name, "PRETRIP_EXCEPTIONS", [], noncritical_missing)
 
-        # Start mission
         run_query(
             "UPDATE log_vehicles SET status='Active', driver_name=:d WHERE reg_number=:r",
             {"d": driver_id, "r": reg},
@@ -239,8 +241,8 @@ def show_start_mission(driver_id, df_fleet):
 # =========================================================
 # CHECKLIST RENDERER
 # =========================================================
-def render_checklist_group(prefix, items):
 
+def render_checklist_group(prefix, items):
     results = []
     cols = st.columns(2)
 
@@ -257,6 +259,7 @@ def render_checklist_group(prefix, items):
 # =========================================================
 # PRETRIP EVENT LOGGER
 # =========================================================
+
 def log_pretrip_event(driver_id, reg, mission_name, event_type, critical_missing, noncritical_missing):
 
     details = (
@@ -277,6 +280,7 @@ def log_pretrip_event(driver_id, reg, mission_name, event_type, critical_missing
 # =========================================================
 # HANDOVER VIEW
 # =========================================================
+
 def show_handover(driver_id, df_fleet):
 
     st.subheader("🔄 Dual‑Driver Handover")
@@ -294,8 +298,8 @@ def show_handover(driver_id, df_fleet):
         return
 
     active["label"] = active["reg_number"] + " (" + active["driver_name"].astype(str) + ")"
-
     selection = st.selectbox("Select Unit", active["label"])
+
     reg = selection.split(" ")[0]
 
     if st.button(f"TAKE CONTROL OF {reg}"):
@@ -321,6 +325,7 @@ def show_handover(driver_id, df_fleet):
 # =========================================================
 # INCIDENT LOGGER
 # =========================================================
+
 def show_incident_logger(driver_id, df_fleet):
 
     st.subheader("🚨 Incident Logging")
@@ -329,12 +334,10 @@ def show_incident_logger(driver_id, df_fleet):
     default_reg = current.iloc[0]["reg_number"] if not current.empty else "UNKNOWN"
 
     reg = st.text_input("Vehicle (reg number)", value=default_reg)
-
     incident_type = st.selectbox(
         "Incident Type",
         ["Traffic Fine", "Breakdown", "Accident", "Delay", "Pre‑Trip Exception", "Other"],
     )
-
     issue = st.text_area("Incident Details")
 
     if st.button("Log Incident"):

@@ -1,5 +1,3 @@
-# modules/logistics/db_utils.py
-
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text
@@ -10,24 +8,17 @@ from sqlalchemy import create_engine, text
 
 DB_URL = "sqlite:///fleet_data.db"
 
-# Streamlit requires check_same_thread=False for SQLite
 engine = create_engine(
     DB_URL,
     future=True,
     connect_args={"check_same_thread": False}
 )
 
-
 # =========================================================
-# WRITE WRAPPER (COMMITS AUTOMATICALLY)
+# WRITE WRAPPER
 # =========================================================
 
 def run_query(query_str: str, params: dict | None = None) -> bool:
-    """
-    Unified write/query executor.
-    Uses engine.begin() which automatically commits.
-    Returns True/False for UI cleanliness.
-    """
     try:
         with engine.begin() as conn:
             conn.execute(text(query_str), params or {})
@@ -36,16 +27,11 @@ def run_query(query_str: str, params: dict | None = None) -> bool:
         st.error(f"Database Error: {e}")
         return False
 
-
 # =========================================================
 # READ WRAPPER
 # =========================================================
 
 def load_data(query_str: str, params: dict | None = None) -> pd.DataFrame:
-    """
-    Unified read executor.
-    Returns a DataFrame or empty DataFrame on failure.
-    """
     try:
         with engine.connect() as conn:
             return pd.read_sql(text(query_str), conn, params=params or {})
@@ -53,27 +39,14 @@ def load_data(query_str: str, params: dict | None = None) -> pd.DataFrame:
         st.error(f"Read Error: {e}")
         return pd.DataFrame()
 
-
 # =========================================================
 # SCHEMA INITIALISATION (SOVEREIGN LOGISTICS STACK v17)
 # =========================================================
 
 def init_db() -> None:
-    """
-    Creates all core logistics tables in their modern schema.
-    This version preserves:
-    - Fleet Registry
-    - Missions
-    - Dispatch Journal
-    - Simulation Engine RFQs
-    - Risk + Compliance
-    """
-
     schema_statements = [
 
-        # ----------------------------------------------------
-        # FLEET REGISTRY (RESTORED ORIGINAL)
-        # ----------------------------------------------------
+        # Fleet Registry
         """
         CREATE TABLE IF NOT EXISTS log_vehicles (
             reg_number TEXT PRIMARY KEY,
@@ -88,9 +61,7 @@ def init_db() -> None:
         );
         """,
 
-        # ----------------------------------------------------
-        # MISSIONS
-        # ----------------------------------------------------
+        # Missions
         """
         CREATE TABLE IF NOT EXISTS log_missions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,9 +76,7 @@ def init_db() -> None:
         );
         """,
 
-        # ----------------------------------------------------
-        # DISPATCH JOURNAL
-        # ----------------------------------------------------
+        # Dispatch Journal
         """
         CREATE TABLE IF NOT EXISTS log_dispatch_journal (
             trip_id TEXT PRIMARY KEY,
@@ -124,9 +93,7 @@ def init_db() -> None:
         );
         """,
 
-        # ----------------------------------------------------
-        # RFQs (SIMULATION ENGINE COMPATIBLE)
-        # ----------------------------------------------------
+        # RFQs
         """
         CREATE TABLE IF NOT EXISTS ind_rfqs (
             rfq_id TEXT PRIMARY KEY,
@@ -140,9 +107,7 @@ def init_db() -> None:
         );
         """,
 
-        # ----------------------------------------------------
-        # RISK INCIDENTS
-        # ----------------------------------------------------
+        # Risk Incidents
         """
         CREATE TABLE IF NOT EXISTS log_risk_incidents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -155,9 +120,7 @@ def init_db() -> None:
         );
         """,
 
-        # ----------------------------------------------------
-        # COMPLIANCE DOCUMENTS
-        # ----------------------------------------------------
+        # Compliance Docs
         """
         CREATE TABLE IF NOT EXISTS log_compliance_docs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,9 +131,7 @@ def init_db() -> None:
         );
         """,
 
-        # ----------------------------------------------------
-        # GPS PINGS (REQUIRED FOR GPS ENGINE)
-        # ----------------------------------------------------
+        # GPS Pings
         """
         CREATE TABLE IF NOT EXISTS gps_pings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -191,3 +152,36 @@ def init_db() -> None:
         run_query(stmt)
 
     print("[DB INIT] Sovereign Logistics Schema Loaded (v17)")
+
+# =========================================================
+# DB HEALTH CHECK (EXPOSED TO LOGISTICS CLOUD)
+# =========================================================
+
+def db_health():
+    try:
+        with engine.connect() as conn:
+            tables = pd.read_sql(
+                text("SELECT name FROM sqlite_master WHERE type='table'"),
+                conn
+            )
+        return {"status": "OK", "tables": tables["name"].tolist()}
+    except Exception as e:
+        return {"status": "ERROR", "details": str(e)}
+
+def reset_fleet_table():
+    run_query("DROP TABLE IF EXISTS log_vehicles")
+    run_query("""
+        CREATE TABLE log_vehicles (
+            reg_number TEXT PRIMARY KEY,
+            type TEXT,
+            make_model TEXT,
+            fuel_rating REAL,
+            status TEXT DEFAULT 'Idle',
+            driver_name TEXT,
+            location TEXT DEFAULT 'Depot',
+            last_lat REAL,
+            last_lon REAL
+        );
+    """)
+    print("[DB RESET] log_vehicles table recreated with sovereign schema")
+

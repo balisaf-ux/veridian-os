@@ -1,18 +1,20 @@
-# modules/logistics/dealstream.py
-
 import datetime
 import streamlit as st
 import pandas as pd
 
-from modules.logistics.db_utils import run_query
+# Robust import
+try:
+    from modules.logistics.db_utils import run_query
+except ImportError:
+    from ..db_utils import run_query
 
 
 def render_dealstream_marketplace():
-    st.markdown("### ⚡ DealStream: Live Freight Marketplace")
+    st.markdown("## ⚡ DealStream: Live Freight Marketplace")
     st.caption("The Handshake Protocol: Trade (Demand) ↔ Logistics (Supply)")
 
     # =========================================================
-    # 1. MOCK DATA (Market-side, not yet bound to RFQs)
+    # 1. MOCK MARKET DATA (Upstream Demand)
     # =========================================================
     active_loads = [
         {
@@ -22,7 +24,7 @@ def render_dealstream_marketplace():
             "destination": "Durban Port",
             "cargo": "Industrial Valves",
             "weight_kg": 450,
-            "rate": 3_500,
+            "rate": 3500,
             "status": "OPEN",
             "safety": "🟢 HIGH",
         },
@@ -32,8 +34,8 @@ def render_dealstream_marketplace():
             "origin": "Ermelo (Mpumalanga)",
             "destination": "Richards Bay",
             "cargo": "Coal (Bulk)",
-            "weight_kg": 34_000,
-            "rate": 18_500,
+            "weight_kg": 34000,
+            "rate": 18500,
             "status": "OPEN",
             "safety": "🔴 LOW (Potholes)",
         },
@@ -43,8 +45,8 @@ def render_dealstream_marketplace():
             "origin": "Cape Town",
             "destination": "JHB City Deep",
             "cargo": "Solar Inverters",
-            "weight_kg": 1_200,
-            "rate": 9_200,
+            "weight_kg": 1200,
+            "rate": 9200,
             "status": "OPEN",
             "safety": "🟡 MED (Traffic)",
         },
@@ -54,11 +56,11 @@ def render_dealstream_marketplace():
     # 2. MARKET METRICS
     # =========================================================
     market_vol = sum(item["rate"] for item in active_loads)
-    avg_rate = market_vol / len(active_loads) if active_loads else 0
+    avg_rate = market_vol / len(active_loads)
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Open Loads", len(active_loads), "+2 New")
-    col2.metric("Market Volume", f"R {market_vol:,.0f}", f"Avg: R {avg_rate:,.0f}")
+    col2.metric("Market Volume", f"R {market_vol:,.0f}", f"Avg R {avg_rate:,.0f}")
     col3.metric("Safety Index", "N3: Good", "R33: Critical")
 
     st.markdown("---")
@@ -102,9 +104,10 @@ def render_dealstream_marketplace():
             # -------------------------
             with c4:
                 if st.button("⚡ BOOK", key=load["id"], use_container_width=True):
-                    # Convert market load → RFQ in ind_rfqs
+
                     rfq_id = f"RFQ-{int(datetime.datetime.now().timestamp())}"
 
+                    # Convert load → RFQ
                     run_query(
                         """
                         INSERT INTO ind_rfqs (rfq_id, client, product, volume, route, status)
@@ -112,12 +115,13 @@ def render_dealstream_marketplace():
                         """,
                         {
                             "id": rfq_id,
-                            "client": "Market Client",          # Placeholder — can be extended
+                            "client": "Market Client",
                             "prod": load["cargo"],
-                            "vol": load["weight_kg"] / 1000.0,  # tons
+                            "vol": load["weight_kg"] / 1000.0,  # convert kg → tons
                             "route": load["route"],
                         },
                     )
 
-                    st.success(f"✅ Load {load['id']} converted to RFQ {rfq_id}.")
+                    st.success(f"Load {load['id']} converted to RFQ {rfq_id}.")
                     st.toast(f"Handshake Complete: {load['id']} → {rfq_id}")
+
