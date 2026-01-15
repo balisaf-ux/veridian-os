@@ -53,71 +53,116 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
 
     :root { 
         --white: #FFFFFF;
         --black: #0F172A;
         --blue: #0F3D91;
+        --blue-dark: #0D2F73;
+        --blue-light: #E8EEF8;
         --red: #C1121F;
+        --gray-light: #F8FAFC;
+        --gray-border: #E2E8F0;
+        --gray-text: #64748B;
     }
 
     .stApp { 
         background-color: var(--white) !important; 
-        background-image: none !important;
         color: var(--black) !important;
         font-family: 'Inter', sans-serif;
     }
 
-    /* Clean Containers */
+    h1, h2, h3 {
+        color: var(--black) !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+    }
+
     [data-testid="stForm"] {
-        background: #F8FAFC !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 8px !important;
+        background: var(--gray-light) !important;
+        border: 1px solid var(--gray-border) !important;
+        border-radius: 10px !important;
         padding: 2rem !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    h1, h2, h3 { 
-        color: var(--black) !important; 
-        font-weight: 800 !important; 
-    }
-
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] { 
-        border-bottom: 2px solid #E2E8F0 !important; 
-    }
-    .stTabs [aria-selected="true"] { 
-        color: var(--blue) !important; 
-        border-bottom: 3px solid var(--blue) !important;
-    }
-
-    /* Buttons */
-    div.stButton > button, 
-    div[data-testid="stFormSubmitButton"] > button {
-        background-color: var(--blue) !important;
-        color: var(--white) !important;
-        font-weight: 700 !important;
-        border: none !important;
-        text-transform: uppercase !important;
-    }
-
-    /* Sidebar */
-    section[data-testid="stSidebar"] {
-        background-color: #F8FAFC !important;
-        border-right: 1px solid #E2E8F0 !important;
     }
 
     .mono-label { 
         font-family: 'JetBrains Mono', monospace; 
         font-size: 11px; 
-        color: #64748B; 
+        color: var(--gray-text); 
         font-weight: 700; 
+        text-transform: uppercase;
     }
 
-    /* Alerts */
-    .stAlert { 
-        border-left: 4px solid var(--red) !important; 
+    div.stButton > button,
+    div[data-testid="stFormSubmitButton"] > button {
+        background-color: var(--blue) !important;
+        color: var(--white) !important;
+        font-weight: 700 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 0.6rem 1.2rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px;
+        transition: background-color 0.2s ease-in-out;
+    }
+
+    div.stButton > button:hover,
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: var(--blue-dark) !important;
+    }
+
+    .stTabs [data-baseweb="tab-list"] { 
+        border-bottom: 2px solid var(--gray-border) !important; 
+    }
+
+    .stTabs [aria-selected="true"] { 
+        color: var(--blue) !important; 
+        border-bottom: 3px solid var(--blue) !important;
+        font-weight: 700 !important;
+    }
+
+    .stTabs [aria-selected="false"] {
+        color: var(--gray-text) !important;
+    }
+
+    section[data-testid="stSidebar"] {
+        background-color: var(--gray-light) !important;
+        border-right: 1px solid var(--gray-border) !important;
+    }
+
+    section[data-testid="stSidebar"] h2 {
+        color: var(--blue) !important;
+        font-weight: 800 !important;
+    }
+
+    .stAlert {
+        border-left: 4px solid var(--red) !important;
+        border-radius: 4px !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: var(--blue) !important;
+        font-weight: 800 !important;
+    }
+
+    [data-testid="stMetricDelta"] {
+        color: var(--red) !important;
+    }
+
+    hr, .stDivider {
+        border-top: 1px solid var(--gray-border) !important;
+    }
+
+    input, textarea, select {
+        border-radius: 6px !important;
+        border: 1px solid var(--gray-border) !important;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border: 1px solid var(--blue) !important;
+        box-shadow: 0 0 0 1px var(--blue-light) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -200,7 +245,7 @@ def main():
             render_logistics_vertical()
         except Exception as e:
             st.error(f"⚠️ Logistics Portal Error: {e}")
-        return
+        return # FIREWALL: STOP EXECUTION HERE
 
     # -------------------------------
     # PATH B — SOVEREIGN ACCESS
@@ -227,7 +272,7 @@ def main():
             st.rerun()
 
     # -------------------------------
-    # ROUTING ENGINE
+    # ROUTING ENGINE (Sovereign Only)
     # -------------------------------
     try:
         if menu == "Financial Control":
