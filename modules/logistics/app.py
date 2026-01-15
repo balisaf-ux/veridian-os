@@ -1,19 +1,24 @@
+# modules/logistics/app.py
+
 import streamlit as st
 import pandas as pd
 
 # =========================================================
-# 1. UNIFIED DB LAYER
+# 1. UNIFIED LOGISTICS DB LAYER (SOVEREIGN)
 # =========================================================
+from modules.logistics.db_utils import (
+    init_db,
+    load_data,
+    run_query,
+    # VERTICAL,       # Uncomment if exported in db_utils
+    # SCHEMA_VERSION  # Uncomment if exported in db_utils
+)
+
+# Use defaults if not imported
 try:
-    from modules.logistics.db_utils import init_db, load_data, run_query
+    from modules.logistics.db_utils import SCHEMA_VERSION
 except ImportError:
-    # Fallback to prevent crash if DB utils aren't set up yet
-    def init_db(): 
-        pass
-    def load_data(q): 
-        return pd.DataFrame()
-    def run_query(q): 
-        pass
+    SCHEMA_VERSION = 17
 
 # =========================================================
 # 2. CORE LOGISTICS CONSTANTS & SERVICES
@@ -23,17 +28,16 @@ try:
     from modules.logistics.services import calculate_route_economics
     from modules.logistics.rules import enrich_fleet_data
 except ImportError:
-    # Defaults for "Safe Mode"
+    # Safe Defaults
     DIESEL_PRICE = 24.50
-    CORRIDORS = {"Durban-JHB": 600}
-    def calculate_route_economics(r, e): 
-        return {"total_ops_cost": 0, "fuel_cost": 0, "toll_cost": 0}
-    def enrich_fleet_data(df): 
-        return df
+    CORRIDORS = {}
+    def calculate_route_economics(r, e): return {"total_ops_cost": 0, "fuel_cost": 0, "toll_cost": 0}
+    def enrich_fleet_data(df): return df
 
 # =========================================================
-# 3. VIEW IMPORTS (Gracefully degrade if missing)
+# 3. VIEW IMPORTS
 # =========================================================
+# Graceful imports to prevent crash if a view file is missing
 try:
     from modules.logistics.views.gps_console import render_gps_console
     from modules.logistics.views.dispatch import render_dispatch_console
@@ -43,9 +47,8 @@ try:
     from modules.logistics.views.finance_dashboard import render_finance_view
     from modules.logistics.views.driver_ops import render_driver_portal
     from modules.logistics.views.fleet import render_fleet_registry
-except ImportError as e:
-    print(f"⚠️ View Import Warning: {e}")
-
+except ImportError:
+    pass 
 
 # =========================================================
 # 4. LOGISTICS VERTICAL (MAIN ENTRY POINT)
@@ -56,49 +59,54 @@ def render_logistics_vertical():
     # HEADER
     # -----------------------------------------------------
     st.markdown("<h1 style='color:#D4AF37;'>🚛 Logistics Cloud</h1>", unsafe_allow_html=True)
-    st.caption("v16.3 Modular Architecture (All Systems Active)")
+    st.caption(f"MAIS Vertical • Sovereign Logistics Stack v{SCHEMA_VERSION}")
 
     # -----------------------------------------------------
-    # INITIALISE DATABASE
+    # INITIALISE DATABASE (SOVEREIGN)
     # -----------------------------------------------------
     init_db()
 
     # -----------------------------------------------------
-    # OPTIONAL ADMIN TOOLS (SOVEREIGN / INTERNAL ONLY)
+    # USER CONTEXT
     # -----------------------------------------------------
-    # We safely check session state to hide this from external guests if needed
     user = st.session_state.get("user_session", {})
     role = user.get("role", "Unknown")
 
-    if role != "External_Auditor":
-        with st.expander("⚙️ Admin Database Tools"):
-            if st.button("Initialize RFQ Table"):
-                run_query(
-                    """
+    # -----------------------------------------------------
+    # OPTIONAL ADMIN TOOLS (SOVEREIGN ONLY)
+    # -----------------------------------------------------
+    if role not in ["External_Auditor"]:
+        with st.expander("⚙️ Sovereign Database Tools"):
+            st.info("These tools operate on the sovereign logistics DB (fleet_data.db).")
+
+            if st.button("Show DB Health"):
+                try:
+                    from modules.logistics.db_utils import db_health
+                    st.json(db_health())
+                except ImportError:
+                    st.warning("DB Health module not found.")
+
+            if st.button("Verify RFQ Table"):
+                run_query("""
                     CREATE TABLE IF NOT EXISTS ind_rfqs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        rfq_id TEXT PRIMARY KEY,
                         client TEXT,
                         origin TEXT,
                         destination TEXT,
                         tons REAL,
                         commodity TEXT,
                         status TEXT,
-                        created_at TEXT
+                        created_at DATETIME
                     );
-                    """
-                )
-                st.success("RFQ table verified.")
+                """)
+                st.success("RFQ table verified and aligned with sovereign schema.")
 
     # -----------------------------------------------------
-    # LOAD DATA CONTEXT (SAFE FALLBACKS)
+    # LOAD DATA CONTEXT
     # -----------------------------------------------------
     try:
         df_fleet_raw = load_data("SELECT * FROM log_vehicles")
-        df_fleet = (
-            enrich_fleet_data(df_fleet_raw.copy())
-            if df_fleet_raw is not None and not df_fleet_raw.empty
-            else pd.DataFrame()
-        )
+        df_fleet = enrich_fleet_data(df_fleet_raw.copy()) if df_fleet_raw is not None and not df_fleet_raw.empty else pd.DataFrame()
     except Exception:
         df_fleet = pd.DataFrame()
 
@@ -152,19 +160,17 @@ def render_logistics_vertical():
         c1, c2 = st.columns([1, 2])
 
         with c1:
-            if CORRIDORS:
-                route = st.selectbox("Select Corridor", list(CORRIDORS.keys()))
-            else:
-                route = st.selectbox("Select Corridor", ["Generic Route"])
+            route = st.selectbox("Select Corridor", list(CORRIDORS.keys()) or ["Generic Route"])
 
-            if not df_fleet.empty and "reg_number" in df_fleet.columns:
-                trucks = df_fleet["reg_number"].tolist()
-            else:
-                trucks = ["Generic Asset"]
+            trucks = (
+                df_fleet["reg_number"].tolist()
+                if not df_fleet.empty and "reg_number" in df_fleet.columns
+                else ["Generic Asset"]
+            )
 
             truck_str = st.selectbox("Assign Asset", trucks)
 
-            eff = 38.0  # Default efficiency
+            eff = 38.0
             st.info(f"Efficiency: **{eff} L/100km**")
 
         with c2:

@@ -5,21 +5,24 @@ import streamlit as st
 from sqlalchemy import create_engine, text
 
 # =========================================================
-# DATABASE CORE MODULE
+# DATABASE CORE MODULE — SOVEREIGN LOGISTICS DB
 # =========================================================
 
-# Use your ORIGINAL DB so fleet + missions + registry remain intact
 DB_URL = "sqlite:///fleet_data.db"
 
-# Allow multi-threaded access (Streamlit requirement)
-engine = create_engine(DB_URL, future=True, connect_args={"check_same_thread": False})
+# Streamlit requires check_same_thread=False for SQLite
+engine = create_engine(
+    DB_URL,
+    future=True,
+    connect_args={"check_same_thread": False}
+)
 
 
 # =========================================================
 # WRITE WRAPPER (COMMITS AUTOMATICALLY)
 # =========================================================
 
-def run_query(query_str: str, params: dict | None = None):
+def run_query(query_str: str, params: dict | None = None) -> bool:
     """
     Unified write/query executor.
     Uses engine.begin() which automatically commits.
@@ -46,7 +49,8 @@ def load_data(query_str: str, params: dict | None = None) -> pd.DataFrame:
     try:
         with engine.connect() as conn:
             return pd.read_sql(text(query_str), conn, params=params or {})
-    except Exception:
+    except Exception as e:
+        st.error(f"Read Error: {e}")
         return pd.DataFrame()
 
 
@@ -62,13 +66,14 @@ def init_db() -> None:
     - Missions
     - Dispatch Journal
     - Simulation Engine RFQs
+    - Risk + Compliance
     """
 
-    tables = [
+    schema_statements = [
 
-        # -------------------------
-        # FLEET (RESTORED ORIGINAL)
-        # -------------------------
+        # ----------------------------------------------------
+        # FLEET REGISTRY (RESTORED ORIGINAL)
+        # ----------------------------------------------------
         """
         CREATE TABLE IF NOT EXISTS log_vehicles (
             reg_number TEXT PRIMARY KEY,
@@ -77,13 +82,15 @@ def init_db() -> None:
             fuel_rating REAL,
             status TEXT DEFAULT 'Idle',
             driver_name TEXT,
-            location TEXT DEFAULT 'Depot'
+            location TEXT DEFAULT 'Depot',
+            last_lat REAL,
+            last_lon REAL
         );
         """,
 
-        # -------------------------
+        # ----------------------------------------------------
         # MISSIONS
-        # -------------------------
+        # ----------------------------------------------------
         """
         CREATE TABLE IF NOT EXISTS log_missions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,9 +105,9 @@ def init_db() -> None:
         );
         """,
 
-        # -------------------------
+        # ----------------------------------------------------
         # DISPATCH JOURNAL
-        # -------------------------
+        # ----------------------------------------------------
         """
         CREATE TABLE IF NOT EXISTS log_dispatch_journal (
             trip_id TEXT PRIMARY KEY,
@@ -117,9 +124,9 @@ def init_db() -> None:
         );
         """,
 
-        # -------------------------
-        # RFQs (MATCHES SIMULATION ENGINE)
-        # -------------------------
+        # ----------------------------------------------------
+        # RFQs (SIMULATION ENGINE COMPATIBLE)
+        # ----------------------------------------------------
         """
         CREATE TABLE IF NOT EXISTS ind_rfqs (
             rfq_id TEXT PRIMARY KEY,
@@ -133,9 +140,9 @@ def init_db() -> None:
         );
         """,
 
-        # -------------------------
-        # RISK
-        # -------------------------
+        # ----------------------------------------------------
+        # RISK INCIDENTS
+        # ----------------------------------------------------
         """
         CREATE TABLE IF NOT EXISTS log_risk_incidents (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -148,9 +155,9 @@ def init_db() -> None:
         );
         """,
 
-        # -------------------------
-        # COMPLIANCE
-        # -------------------------
+        # ----------------------------------------------------
+        # COMPLIANCE DOCUMENTS
+        # ----------------------------------------------------
         """
         CREATE TABLE IF NOT EXISTS log_compliance_docs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -159,10 +166,28 @@ def init_db() -> None:
             expiry_date DATE,
             status TEXT
         );
+        """,
+
+        # ----------------------------------------------------
+        # GPS PINGS (REQUIRED FOR GPS ENGINE)
+        # ----------------------------------------------------
+        """
+        CREATE TABLE IF NOT EXISTS gps_pings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reg_number TEXT,
+            timestamp TEXT,
+            latitude REAL,
+            longitude REAL,
+            speed REAL,
+            heading REAL,
+            ignition INTEGER,
+            signal_quality REAL,
+            source TEXT
+        );
         """
     ]
 
-    for stmt in tables:
+    for stmt in schema_statements:
         run_query(stmt)
 
     print("[DB INIT] Sovereign Logistics Schema Loaded (v17)")
