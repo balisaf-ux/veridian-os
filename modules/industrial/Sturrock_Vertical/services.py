@@ -2,20 +2,29 @@ import streamlit as st
 import pandas as pd
 import datetime
 
-def generate_qr_identity(asset_id):
-    """
-    Returns the unique string for the QR Code.
-    Future: This will link to the mobile app view.
-    """
-    return f"MAIS:ID:{asset_id}:VERIFIED"
-
 def attach_compliance_doc(asset_id, doc_type, expiry_days=365):
     """
-    Simulates uploading a compliance cert to The Vault.
+    Simulates uploading a compliance cert to The Vault AND updates the asset status.
+    This creates the 'Audit Trail' Nazeem is looking for.
     """
-    if 'compliance_vault' not in st.session_state:
+    # Safety Check: Ensure DB is initialized
+    if 'asset_registry' not in st.session_state or 'compliance_vault' not in st.session_state:
         return False
 
+    # 1. VISUAL UPDATE: Update the Main Registry so the UI changes immediately
+    registry = st.session_state.asset_registry
+    # Find the row index for this Asset ID
+    idx = registry[registry['Asset_ID'] == asset_id].index
+
+    if not idx.empty:
+        # Update the 'Compliance' column to show verification
+        st.session_state.asset_registry.at[idx[0], 'Compliance'] = f"{doc_type} (Verified)"
+        # Also auto-upgrade the status to 'Active' or 'Operational'
+        st.session_state.asset_registry.at[idx[0], 'Status'] = "Operational"
+    else:
+        return False # Asset not found, stop here
+
+    # 2. BACKEND LOGGING: Add entry to the Compliance Vault (The permanent record)
     expiry = datetime.date.today() + datetime.timedelta(days=expiry_days)
     
     new_doc = {
@@ -30,24 +39,12 @@ def attach_compliance_doc(asset_id, doc_type, expiry_days=365):
         [st.session_state.compliance_vault, pd.DataFrame([new_doc])], 
         ignore_index=True
     )
+    
     return True
 
-def get_asset_docs(trade_deal_id):
+def generate_qr_identity(asset_id):
     """
-    Retrieves all compliance docs linked to a specific Trade Deal
-    via the Asset Registry.
+    Returns the unique string for the QR Code.
+    Future: This will link to the mobile app view for field inspectors.
     """
-    # 1. Find Asset ID from Trade ID
-    assets = st.session_state.asset_registry
-    if assets.empty: return []
-    
-    linked_asset = assets[assets['Trade_Deal_ID'] == trade_deal_id]
-    if linked_asset.empty: return []
-    
-    asset_id = linked_asset.iloc[0]['Asset_ID']
-    
-    # 2. Find Docs
-    vault = st.session_state.compliance_vault
-    docs = vault[vault['Asset_ID'] == asset_id]
-    
-    return docs.to_dict('records')
+    return f"MAIS:ID:{asset_id}:VERIFIED"
